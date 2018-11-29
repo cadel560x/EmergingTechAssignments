@@ -22,7 +22,7 @@ def load():
 def configure():
 	global model
 	if model:
-		confirmation = input("The current model is about to be destroyed. Continue? (y/n) ")
+		confirmation = input("\nThe current model is about to be destroyed. Continue? (y/n) ")
 		if confirmation == "y":
 			del model
 		elif confirmation == "n":
@@ -30,7 +30,9 @@ def configure():
 	
 	model = kr.models.Sequential()
 	
-	input_str = input("First layer: how many input neurons? (default: 784) ")
+	print("Model options")
+	
+	input_str = input("\nFirst layer: how many input neurons? (default: 784) ")
 	inital_neurons = 784
 	if not len(input_str) == 0:
 		try:
@@ -59,7 +61,7 @@ def configure():
 	# First and second layers
 	model.add(kr.layers.Dense(units=neurons, activation=activation_function, input_dim=inital_neurons))
 	
-	answer = input("Add another layer? (y/n) ")
+	answer = input("\nAdd another layer? (y/n) ")
 	while answer == "y":
 		neurons = 400
 		input_str = input("New layer: how many neurons? (default: 400) ")
@@ -77,7 +79,7 @@ def configure():
 		
 		model.add(kr.layers.Dense(units=neurons, activation=activation_function))
 		
-		answer = input("Add another layer? (y/n) ")
+		answer = input("\nAdd another layer? (y/n) ")
 			
 	# Add a hidden layer with 1000 neurons and an input layer with 784.	
 	# model.add(kr.layers.Dense(units=600, activation='linear', input_dim=784))
@@ -85,17 +87,24 @@ def configure():
 	# model.add(kr.layers.Dense(units=400, activation='relu'))
 	# Add a three neuron output layer.
 	# model.add(kr.layers.Dense(units=10, activation='softmax'))
+	# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 	
 	print("Last layer: it is set by default to 10 output neurons strictly")
-	input_str = input("Last layer: which activation function to use? (linear, sigmoid, relu, softmax) ")
+	input_str = input("Last layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softmax) ")
+	print("More activation functions at https://keras.io/activations/")
 	activation_function = input_str
 	model.add(kr.layers.Dense(units=10, activation=activation_function))
 	
-	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	print("\nCompile options")
+	print("Which loss function to use? (e.g. binary_crossentropy, categorical_crossentropy, mse, mae, mape, msle, kld, cosine) ")
+	print("More loss functions at https://github.com/keras-team/keras/blob/master/keras/losses.py")
+	loss_function = input()
 	
-# def compile():
-	# global model
-	# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	print("Which optimizer? (e.g sgd, rmsprop, adam, adadelta, adagrad)")
+	print("More optimizers at https://keras.io/optimizers/")
+	optimizer_value = input()
+	model.compile(loss=loss_function, optimizer=optimizer_value, metrics=['accuracy'])
+	
 
 def train():
 	global model
