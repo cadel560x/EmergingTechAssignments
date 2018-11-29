@@ -1,4 +1,5 @@
 # Adapted from https://github.com/ianmcloughlin/jupyter-teaching-notebooks/blob/master/mnist.ipynb
+import matplotlib.pyplot as plt
 
 import sklearn.preprocessing as pre
 import numpy as np
@@ -55,7 +56,7 @@ def configure():
 			# handle input error or assign default for invalid input
 			print('Second layer neurons can\'t be less or equal to zero')
 	
-	input_str = input("Second layer: which activation function to use? (linear, sigmoid, relu, softmax) ")
+	input_str = input("Second layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax)  ")
 	activation_function = input_str
 	
 	# First and second layers
@@ -74,7 +75,7 @@ def configure():
 				# handle input error or assign default for invalid input
 				print('New layer neurons can\'t be less or equal to zero')
 		
-		input_str = input("New layer: which activation function to use? (linear, sigmoid, relu, softmax) ")
+		input_str = input("New layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax)  ")
 		activation_function = input_str
 		
 		model.add(kr.layers.Dense(units=neurons, activation=activation_function))
@@ -90,7 +91,7 @@ def configure():
 	# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 	
 	print("Last layer: it is set by default to 10 output neurons strictly")
-	input_str = input("Last layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softmax) ")
+	input_str = input("Last layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax) ")
 	print("More activation functions at https://keras.io/activations/")
 	activation_function = input_str
 	model.add(kr.layers.Dense(units=10, activation=activation_function))
@@ -178,13 +179,62 @@ def save():
 	filename = input("Please enter a filename: ")
 	model.save(filename)
 	
-def read_png():
+def png_read():
+	if not model:
+		print("There is no model!\nPlease create/load a model first")
+		return
+	
 	filename = input("Please enter a PNG image file: ")
 	img = Image.open(filename).convert("L")
-	img = img.resize((28,28))
+	print("Image width (pixels): ", img.size[0], " Image height (pixels): ", img.size[1])
+	print("\n!Notice! Processing width times processing height must equal the amount of input neurons of a model!\n")
+	
+	proc_width = img.size[0]
+	proc_height = img.size[1]
+	
+	input_str = input("Please enter new image processing width: (Press enter to keep original dimension) ")
+	if input_str:
+		try:
+			proc_width = int(input_str)
+		except ValueError:
+				# handle input error or assign default for invalid input
+				print('Invalid input')
+				
+	input_str = input("Please enter new image processing height: (Press enter to keep original dimension) ")
+	if input_str:
+		try:
+			proc_height = int(input_str)
+		except ValueError:
+				# handle input error or assign default for invalid input
+				print('Invalid input')
+	
+	if (proc_width != img.size[0]) or (proc_height != img.size[1]):
+		img = img.resize((proc_width,proc_height), Image.ANTIALIAS)
+		
+	print("\nProcessing width:", proc_width, "Processing height:", proc_height)
+	
+	# img = Image.open(filename).convert("L")
+	# img.thumbnail(size, Image.ANTIALIAS)
+	
+	# plt.imshow(img)
+	# plt.show()
+	
+	one_dim =  proc_width*proc_height
+	
 	im2arr = np.array(img)
-	im2arr = im2arr.reshape(1,28,28,1)
-	print(im2arr)
+	# print(im2arr.shape)
+	# im2arr = im2arr.reshape(1,28,28,1)
+	
+	# im2arr = np.array(img).reshape(1,784)
+	# im2arr = np.array(img).reshape(1,one_dim)
+	im2arr = np.array(list(img)).reshape(1, one_dim).astype(np.uint8) / 255.0
+	# print(im2arr.shape)
+	
+	pred = model.predict(im2arr)
+	print(pred)
+	correct_indices = np.nonzero(pred)
+	print(correct_indices)
+	print("The program predicts image to be: ", correct_indices[-1])
 
 
 choice = True
