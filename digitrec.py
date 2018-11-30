@@ -9,15 +9,21 @@ import gzip
 from keras.models import load_model
 from PIL import Image
 
+#
+with gzip.open('data/t10k-labels-idx1-ubyte.gz', 'rb') as f:
+		test_lbl = f.read()
+test_lbl = np.array(list(test_lbl[ 8:])).astype(np.uint8)
 encoder = pre.LabelBinarizer()
-# model = kr.models.Sequential()
+encoder.fit(test_lbl)
+
+# 
 model = None
 
 def load():
 	global model
 	filename = input("Please enter a HDF5 file to load: ")
 	model = load_model(filename)
-	# print(type(model))
+	# DEBUG print(type(model))
 	model.summary()
 
 def configure():
@@ -56,8 +62,9 @@ def configure():
 			# handle input error or assign default for invalid input
 			print('Second layer neurons can\'t be less or equal to zero')
 	
-	input_str = input("Second layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax)  ")
-	activation_function = input_str
+	print("Second layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax)  ")
+	print("More activation functions at https://keras.io/activations/")
+	activation_function = input()
 	
 	# First and second layers
 	model.add(kr.layers.Dense(units=neurons, activation=activation_function, input_dim=inital_neurons))
@@ -75,8 +82,9 @@ def configure():
 				# handle input error or assign default for invalid input
 				print('New layer neurons can\'t be less or equal to zero')
 		
-		input_str = input("New layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax)  ")
-		activation_function = input_str
+		print("New layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax)  ")
+		print("More activation functions at https://keras.io/activations/")
+		activation_function = input()
 		
 		model.add(kr.layers.Dense(units=neurons, activation=activation_function))
 		
@@ -91,9 +99,9 @@ def configure():
 	# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 	
 	print("Last layer: it is set by default to 10 output neurons strictly")
-	input_str = input("Last layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax) ")
+	print("Last layer: which activation function to use? (e.g. linear, sigmoid, elu, selu, relu, softplus, softmax) ")
 	print("More activation functions at https://keras.io/activations/")
-	activation_function = input_str
+	activation_function = input()
 	model.add(kr.layers.Dense(units=10, activation=activation_function))
 	
 	print("\nCompile options")
@@ -101,7 +109,7 @@ def configure():
 	print("More loss functions at https://github.com/keras-team/keras/blob/master/keras/losses.py")
 	loss_function = input()
 	
-	print("Which optimizer? (e.g sgd, rmsprop, adam, adadelta, adagrad)")
+	print("\nWhich optimizer? (e.g sgd, rmsprop, adam, adadelta, adagrad)")
 	print("More optimizers at https://keras.io/optimizers/")
 	optimizer_value = input()
 	model.compile(loss=loss_function, optimizer=optimizer_value, metrics=['accuracy'])
@@ -125,16 +133,37 @@ def train():
 	train_lbl =  np.array(list(train_lbl[ 8:])).astype(np.uint8)
 
 	inputs = train_img.reshape(60000, 784)
-
-	# encoder = pre.LabelBinarizer()
-	encoder.fit(train_lbl)
 	outputs = encoder.transform(train_lbl)
 
+	# DEBUG print("outputs", outputs, outputs.shape)
+	
 	model.summary()
 	
-	model.fit(inputs, outputs, epochs=2, batch_size=100)
+	epoch_input = 2
+	input_str = input("Train model: how many epochs? (default: 2) ")
+	if not len(input_str) == 0:
+		try:
+			epoch_input = int(input_str)
+			if epoch_input <= 0:
+				raise ValueError('InvalidInput')
+		except ValueError:
+			# handle input error or assign default for invalid input
+			print('Second layer neurons can\'t be less or equal to zero')
+			
+	batch_input = 100
+	input_str = input("Train model: batch size? (default: 100) ")
+	if not len(input_str) == 0:
+		try:
+			batch_input = int(input_str)
+			if batch_input <= 0:
+				raise ValueError('InvalidInput')
+		except ValueError:
+			# handle input error or assign default for invalid input
+			print('Second layer neurons can\'t be less or equal to zero')
+			
 	
-	# print(type(model))
+	model.fit(inputs, outputs, epochs=epoch_input, batch_size=batch_input)
+	
 	print("\nSave this model into a HDF5 file? (y/n) ")
 	save_file = input()
 	
@@ -144,6 +173,7 @@ def train():
 def test():
 	global model
 	global encoder
+	global test_lbl
 	
 	if not model:
 		print("Empty model. Please create/load a model first")
@@ -151,31 +181,28 @@ def test():
 	
 	with gzip.open('data/t10k-images-idx3-ubyte.gz', 'rb') as f:
 		test_img = f.read()
-
-	with gzip.open('data/t10k-labels-idx1-ubyte.gz', 'rb') as f:
-		test_lbl = f.read()
 		
 	test_img = ~np.array(list(test_img[16:])).reshape(10000, 784).astype(np.uint8) / 255.0
-	test_lbl =  np.array(list(test_lbl[ 8:])).astype(np.uint8)
+	# local_test_lbl =  np.array(list(test_lbl[8:])).astype(np.uint8)
 	
-	encoder.fit(test_lbl)
-	# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	# encoder.fit(local_test_lbl)
 	
 	model.summary()
-	# model.build()
-	# model.summary()
 	
-	# model.predict(test_img)
+	# DEBUG model.predict(test_img)
 	
 	rs = (encoder.inverse_transform(model.predict(test_img)) == test_lbl).sum()
 	pct = (rs/10000)*100
 	print("\nModel has made", rs, "successful predictions out of 10000 tests (", pct, "%)")
 	
-	# model.summary()
 
 def save():
 	global model
 	# Save model
+	if not model:
+		print("There is no model!\nPlease create/load a model first")
+		return
+
 	filename = input("Please enter a filename: ")
 	model.save(filename)
 	
@@ -186,6 +213,7 @@ def png_read():
 	
 	filename = input("Please enter a PNG image file: ")
 	img = Image.open(filename).convert("L")
+	
 	print("Image width (pixels): ", img.size[0], " Image height (pixels): ", img.size[1])
 	print("\n!Notice! Processing width times processing height must equal the amount of input neurons of a model!\n")
 	
@@ -209,32 +237,34 @@ def png_read():
 				print('Invalid input')
 	
 	if (proc_width != img.size[0]) or (proc_height != img.size[1]):
-		img = img.resize((proc_width,proc_height), Image.ANTIALIAS)
+		# img = img.resize((proc_width,proc_height), Image.ANTIALIAS)
+		img.thumbnail((proc_width,proc_height), Image.ANTIALIAS)
 		
 	print("\nProcessing width:", proc_width, "Processing height:", proc_height)
 	
-	# img = Image.open(filename).convert("L")
-	# img.thumbnail(size, Image.ANTIALIAS)
-	
+	# DEBUG
+	# print("img.size",img.size)
 	# plt.imshow(img)
 	# plt.show()
 	
 	one_dim =  proc_width*proc_height
 	
-	im2arr = np.array(img)
-	# print(im2arr.shape)
-	# im2arr = im2arr.reshape(1,28,28,1)
+	im2arr = np.array(img.getdata())
+	# DEBUG print(im2arr.shape)
 	
 	# im2arr = np.array(img).reshape(1,784)
 	# im2arr = np.array(img).reshape(1,one_dim)
-	im2arr = np.array(list(img)).reshape(1, one_dim).astype(np.uint8) / 255.0
-	# print(im2arr.shape)
+	im2arr = np.array(list(im2arr)).reshape(1, one_dim).astype(np.uint8) / 255.0
+	# DEBUG print(im2arr)
+	# DEBUG print(im2arr.shape)
 	
 	pred = model.predict(im2arr)
-	print(pred)
-	correct_indices = np.nonzero(pred)
-	print(correct_indices)
-	print("The program predicts image to be: ", correct_indices[-1])
+	# DEBUG print(pred)
+	
+	rs = encoder.inverse_transform(pred)
+	# DEBUG print(rs)
+
+	print("The program predicts that the image is a:", rs)
 
 
 choice = True
