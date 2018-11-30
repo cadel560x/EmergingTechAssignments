@@ -9,14 +9,14 @@ import gzip
 from keras.models import load_model
 from PIL import Image
 
-#
+# Initialize a global enconder.
 with gzip.open('data/t10k-labels-idx1-ubyte.gz', 'rb') as f:
 		test_lbl = f.read()
 test_lbl = np.array(list(test_lbl[ 8:])).astype(np.uint8)
 encoder = pre.LabelBinarizer()
 encoder.fit(test_lbl)
 
-# 
+# Global model variable
 model = None
 
 def load():
@@ -112,7 +112,10 @@ def configure():
 	print("\nWhich optimizer? (e.g sgd, rmsprop, adam, adadelta, adagrad)")
 	print("More optimizers at https://keras.io/optimizers/")
 	optimizer_value = input()
+	
 	model.compile(loss=loss_function, optimizer=optimizer_value, metrics=['accuracy'])
+	
+	model.summary
 	
 
 def train():
@@ -183,9 +186,6 @@ def test():
 		test_img = f.read()
 		
 	test_img = ~np.array(list(test_img[16:])).reshape(10000, 784).astype(np.uint8) / 255.0
-	# local_test_lbl =  np.array(list(test_lbl[8:])).astype(np.uint8)
-	
-	# encoder.fit(local_test_lbl)
 	
 	model.summary()
 	
@@ -259,7 +259,8 @@ def png_read():
 	# DEBUG print(im2arr.shape)
 	
 	pred = model.predict(im2arr)
-	# DEBUG print(pred)
+	# DEBUG
+	# print(pred)
 	
 	rs = encoder.inverse_transform(pred)
 	# DEBUG print(rs)
